@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse our gallery of facilities, ceremonies, and memorial keepsakes at The Keepsake Company in Columbus, GA.">
+    <title>Gallery | The Keepsake Company | Columbus, GA</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container">
+            <div class="top-bar-content">
+                <div class="top-bar-left">
+                    <span><i class="fas fa-phone-alt"></i> (706) 555-0199</span>
+                    <span><i class="fas fa-envelope"></i> info@thekeepsakecompany.org</span>
+                </div>
+                <div class="top-bar-right">
+                    <span><i class="fas fa-clock"></i> Mon-Fri: 9AM - 5PM | Sat: 10AM - 2PM</span>
+                    <div class="social-links">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="main-header" id="mainHeader">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html">
+                        <span class="logo-icon"><i class="fas fa-dove"></i></span>
+                        <div class="logo-text">
+                            <span class="logo-name">The Keepsake Company</span>
+                            <span class="logo-tagline">Celebration of Life Services</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav" id="mainNav">
+                    <ul class="nav-menu">
+                        <li class="nav-item"><a href="index.html">Home</a></li>
+                        <li class="nav-item has-dropdown">
+                            <a href="about.html">About Us <i class="fas fa-chevron-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="about.html#our-story">Our Story</a></li>
+                                <li><a href="about.html#our-team">Our Team</a></li>
+                                <li><a href="about.html#mission">Our Mission</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item has-dropdown">
+                            <a href="services.html">Services <i class="fas fa-chevron-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="services.html#funeral-planning">Funeral Planning</a></li>
+                                <li><a href="services.html#celebration-of-life">Celebration of Life</a></li>
+                                <li><a href="services.html#memorial-keepsakes">Memorial Keepsakes</a></li>
+                                <li><a href="services.html#cremation">Cremation Services</a></li>
+                                <li><a href="services.html#pre-planning">Pre-Planning</a></li>
+                                <li><a href="services.html#grief-support">Grief Support</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item active has-dropdown">
+                            <a href="gallery.html">Gallery <i class="fas fa-chevron-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#facilities">Our Facilities</a></li>
+                                <li><a href="#ceremonies">Ceremonies</a></li>
+                                <li><a href="#keepsakes">Keepsake Collection</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item has-dropdown">
+                            <a href="store.html">Store <i class="fas fa-chevron-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="store.html#jewelry">Memorial Jewelry</a></li>
+                                <li><a href="store.html#urns">Urns &amp; Vessels</a></li>
+                                <li><a href="store.html#keepsakes">Keepsake Items</a></li>
+                                <li><a href="store.html#flowers">Floral Arrangements</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item"><a href="contact.html">Contact Us</a></li>
+                    </ul>
+                </nav>
+                <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation">
+                    <span class="hamburger"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Gallery</h1>
+            <div class="breadcrumb">
+                <a href="index.html">Home</a>
+                <span>/</span>
+                <span>Gallery</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section class="gallery-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Our Portfolio</span>
+                <h2>A Glimpse Into Our Work</h2>
+                <div class="divider"><span><i class="fas fa-dove"></i></span></div>
+                <p class="section-description">Browse photos of our facilities, ceremonies, and memorial keepsake collection</p>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="gallery-filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="facilities">Facilities</button>
+                <button class="filter-btn" data-filter="ceremonies">Ceremonies</button>
+                <button class="filter-btn" data-filter="keepsakes">Keepsakes</button>
+            </div>
+
+            <!-- EDIT: Replace stock images with actual company photos -->
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- Facilities -->
+                <div class="gallery-item" data-category="facilities" id="facilities">
+                    <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=500&q=80" alt="Chapel Interior" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="facilities">
+                    <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=500&q=80" alt="Reception Area" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="facilities">
+                    <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=500&q=80" alt="Arrangement Room" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="facilities">
+                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80" alt="Lobby" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+
+                <!-- Ceremonies -->
+                <div class="gallery-item" data-category="ceremonies" id="ceremonies">
+                    <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=500&q=80" alt="Celebration of Life" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="ceremonies">
+                    <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&q=80" alt="Memorial Service" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="ceremonies">
+                    <img src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=500&q=80" alt="Family Gathering" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="ceremonies">
+                    <img src="https://images.unsplash.com/photo-1609220136736-443140cffec6?w=500&q=80" alt="Floral Arrangements" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+
+                <!-- Keepsakes -->
+                <div class="gallery-item" data-category="keepsakes" id="keepsakes">
+                    <img src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=500&q=80" alt="Memorial Jewelry" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="keepsakes">
+                    <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80" alt="Keepsake Necklace" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="keepsakes">
+                    <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=500&q=80" alt="Memorial Rings" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-category="keepsakes">
+                    <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&q=80" alt="Custom Urns" loading="lazy">
+                    <div class="gallery-item-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+            </div>
+            <!-- END EDIT -->
+        </div>
+    </section>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose" aria-label="Close lightbox">&times;</button>
+        <img src="" alt="Gallery Image" id="lightboxImage">
+    </div>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Want to See Our Facilities In Person?</h2>
+                <p>Schedule a visit to tour our chapel and meet with our compassionate team.</p>
+                <div class="cta-buttons">
+                    <a href="tel:7065550199" class="btn btn-gold btn-lg"><i class="fas fa-phone-alt"></i> Call (706) 555-0199</a>
+                    <a href="contact.html" class="btn btn-outline btn-lg">Schedule a Tour</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <span class="logo-icon"><i class="fas fa-dove"></i></span>
+                        <span class="logo-name">The Keepsake Company</span>
+                    </div>
+                    <p>Providing compassionate celebration of life services and handcrafted memorial keepsakes to the Columbus, GA community.</p>
+                    <div class="footer-social">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="gallery.html">Gallery</a></li>
+                        <li><a href="store.html">Store</a></li>
+                        <li><a href="contact.html">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Our Services</h4>
+                    <ul class="footer-links">
+                        <li><a href="services.html#funeral-planning">Funeral Planning</a></li>
+                        <li><a href="services.html#celebration-of-life">Celebration of Life</a></li>
+                        <li><a href="services.html#memorial-keepsakes">Memorial Keepsakes</a></li>
+                        <li><a href="services.html#cremation">Cremation Services</a></li>
+                        <li><a href="services.html#pre-planning">Pre-Planning</a></li>
+                        <li><a href="services.html#grief-support">Grief Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Contact Information</h4>
+                    <div class="footer-contact">
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>1234 Memorial Drive<br>Columbus, GA 31901</div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-phone-alt"></i>
+                            <a href="tel:7065550199">(706) 555-0199</a>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <a href="mailto:info@thekeepsakecompany.org">info@thekeepsakecompany.org</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="footer-bottom-content">
+                    <p>&copy; 2026 The Keepsake Company. All Rights Reserved.</p>
+                    <div class="footer-bottom-links">
+                        <a href="#">Privacy Policy</a>
+                        <a href="#">Terms of Service</a>
+                        <a href="#">Sitemap</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
