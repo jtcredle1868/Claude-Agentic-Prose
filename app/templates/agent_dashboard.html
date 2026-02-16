@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% block title %}Notion AI Agent - Prose Engine{% endblock %}
+
+{% block content %}
+<div class="agent-dashboard">
+    <div class="page-header">
+        <h1>Notion AI Agent</h1>
+        <p class="subtitle">Automated meeting report processing &amp; project management</p>
+    </div>
+
+    <!-- Status Panel -->
+    <div class="agent-status-panel" id="status-panel">
+        <h2>Agent Status</h2>
+        <div class="status-grid" id="status-grid">
+            <div class="status-item" id="status-notion">
+                <span class="status-dot"></span>
+                <span>Notion API</span>
+            </div>
+            <div class="status-item" id="status-anthropic">
+                <span class="status-dot"></span>
+                <span>Anthropic API</span>
+            </div>
+            <div class="status-item" id="status-inbox">
+                <span class="status-dot"></span>
+                <span>Fireflies Inbox</span>
+            </div>
+            <div class="status-item" id="status-projects">
+                <span class="status-dot"></span>
+                <span>Projects Page</span>
+            </div>
+        </div>
+        <div class="status-stats" id="status-stats"></div>
+    </div>
+
+    <!-- Action Panels -->
+    <div class="agent-panels">
+        <!-- Fireflies Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Fireflies.ai Reports</h2>
+                <p>Process meeting summaries, identify clients, extract and assign tasks</p>
+            </div>
+            <div class="panel-body">
+                <textarea id="fireflies-input" class="agent-textarea"
+                    placeholder="Paste a Fireflies.ai meeting summary here..."></textarea>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary" onclick="previewFireflies()">Preview Parse</button>
+                    <button class="btn btn-primary" onclick="processFireflies()">Process &amp; Send to Notion</button>
+                    <button class="btn btn-secondary" onclick="scanInbox()">Scan Inbox</button>
+                </div>
+            </div>
+            <div class="panel-result hidden" id="fireflies-result">
+                <h3>Result</h3>
+                <pre id="fireflies-output"></pre>
+            </div>
+        </div>
+
+        <!-- Obsidian Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Obsidian Monthly Review</h2>
+                <p>Import project ideas, generate plans with tasks, milestones, and timelines</p>
+            </div>
+            <div class="panel-body">
+                <textarea id="obsidian-input" class="agent-textarea"
+                    placeholder="Paste Obsidian markdown export here..."></textarea>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary" onclick="previewObsidian()">Preview Plans</button>
+                    <button class="btn btn-primary" onclick="processObsidian()">Process &amp; Create in Notion</button>
+                </div>
+            </div>
+            <div class="panel-result hidden" id="obsidian-result">
+                <h3>Result</h3>
+                <pre id="obsidian-output"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clients List -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Known Clients</h2>
+            <button class="btn btn-sm btn-primary" onclick="showAddClientModal()">+ Add Client</button>
+        </div>
+        <div class="panel-body">
+            <div id="clients-list" class="clients-grid"></div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Recent Activity</h2>
+            <button class="btn btn-sm btn-secondary" onclick="loadLogs()">Refresh</button>
+        </div>
+        <div class="panel-body">
+            <div id="logs-list" class="logs-list"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .agent-dashboard { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { margin-bottom: 0.25rem; }
+    .page-header .subtitle { opacity: 0.7; font-size: 1.1rem; }
+
+    .agent-status-panel {
+        background: var(--bg-secondary, #1e1e2e);
+        border: 1px solid var(--border-color, #333);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .status-grid {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin: 1rem 0;
+    }
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #666;
+    }
+    .status-dot.active { background: #4caf50; }
+    .status-dot.inactive { background: #f44336; }
+    .status-stats { font-size: 0.9rem; opacity: 0.7; margin-top: 0.5rem; }
+
+    .agent-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media (max-width: 900px) { .agent-panels { grid-template-columns: 1fr; } }
+
+    .panel {
+        background: var(--bg-secondary, #1e1e2e);
+        border: 1px solid var(--border-color, #333);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+    .panel-header {
+        padding: 1.25rem 1.5rem 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .panel-header h2 { margin: 0; font-size: 1.2rem; }
+    .panel-header p { font-size: 0.85rem; opacity: 0.6; margin: 0.25rem 0 0; width: 100%; }
+    .panel-body { padding: 0 1.5rem 1.5rem; }
+
+    .agent-textarea {
+        width: 100%;
+        min-height: 180px;
+        padding: 1rem;
+        border: 1px solid var(--border-color, #333);
+        border-radius: 6px;
+        background: var(--bg-primary, #121220);
+        color: var(--text-primary, #eee);
+        font-family: inherit;
+        font-size: 0.9rem;
+        resize: vertical;
+        margin-bottom: 1rem;
+    }
+    .panel-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+    .panel-result {
+        border-top: 1px solid var(--border-color, #333);
+        padding: 1.25rem 1.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .panel-result pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+    .panel-result h3 { margin: 0 0 0.75rem; font-size: 1rem; }
+
+    .clients-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+    .client-card {
+        background: var(--bg-primary, #121220);
+        border: 1px solid var(--border-color, #333);
+        border-radius: 6px;
+        padding: 1rem;
+    }
+    .client-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+    .client-card .meta { font-size: 0.8rem; opacity: 0.6; }
+
+    .logs-list { max-height: 400px; overflow-y: auto; }
+    .log-entry {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color, #333);
+        font-size: 0.85rem;
+    }
+    .log-entry .log-type {
+        background: var(--bg-primary, #121220);
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        height: fit-content;
+    }
+    .log-entry .log-time { opacity: 0.5; white-space: nowrap; }
+
+    .hidden { display: none !important; }
+    .btn { cursor: pointer; padding: 0.5rem 1rem; border: none; border-radius: 4px; font-size: 0.9rem; }
+    .btn-primary { background: var(--accent-color, #6366f1); color: white; }
+    .btn-secondary { background: var(--bg-primary, #333); color: var(--text-primary, #eee); border: 1px solid var(--border-color, #555); }
+    .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+    .btn:hover { opacity: 0.85; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── API Helper ────────────────────────────────────────────────────────
+
+async function agentApi(path, options = {}) {
+    const url = '/agent' + path;
+    const resp = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...options.headers },
+        ...options,
+    });
+    const data = await resp.json();
+    if (!resp.ok && !data) throw new Error(`Request failed: ${resp.status}`);
+    return data;
+}
+
+// ─── Status ────────────────────────────────────────────────────────────
+
+async function loadStatus() {
+    try {
+        const status = await agentApi('/api/status');
+        const cfg = status.configured;
+
+        setStatusDot('status-notion', cfg.notion_api);
+        setStatusDot('status-anthropic', cfg.anthropic_api);
+        setStatusDot('status-inbox', cfg.fireflies_inbox);
+        setStatusDot('status-projects', cfg.projects_page);
+
+        const stats = status.stats;
+        document.getElementById('status-stats').textContent =
+            `${stats.known_clients} clients tracked | ${stats.total_events_logged} events logged` +
+            (stats.last_activity ? ` | Last activity: ${new Date(stats.last_activity).toLocaleString()}` : '');
+    } catch (e) {
+        console.error('Failed to load status:', e);
+    }
+}
+
+function setStatusDot(elementId, active) {
+    const dot = document.querySelector(`#${elementId} .status-dot`);
+    if (dot) {
+        dot.classList.toggle('active', active);
+        dot.classList.toggle('inactive', !active);
+    }
+}
+
+// ─── Fireflies ─────────────────────────────────────────────────────────
+
+async function previewFireflies() {
+    const report = document.getElementById('fireflies-input').value.trim();
+    if (!report) { alert('Paste a Fireflies report first.'); return; }
+    showResult('fireflies', 'Parsing...');
+    try {
+        const data = await agentApi('/api/fireflies/parse-only', {
+            method: 'POST',
+            body: JSON.stringify({ report }),
+        });
+        showResult('fireflies', JSON.stringify(data, null, 2));
+    } catch (e) {
+        showResult('fireflies', 'Error: ' + e.message);
+    }
+}
+
+async function processFireflies() {
+    const report = document.getElementById('fireflies-input').value.trim();
+    if (!report) { alert('Paste a Fireflies report first.'); return; }
+    showResult('fireflies', 'Processing and sending to Notion...');
+    try {
+        const data = await agentApi('/api/fireflies/process', {
+            method: 'POST',
+            body: JSON.stringify({ report }),
+        });
+        showResult('fireflies', JSON.stringify(data, null, 2));
+        loadClients();
+        loadLogs();
+    } catch (e) {
+        showResult('fireflies', 'Error: ' + e.message);
+    }
+}
+
+async function scanInbox() {
+    showResult('fireflies', 'Scanning Fireflies inbox...');
+    try {
+        const data = await agentApi('/api/fireflies/scan-inbox', { method: 'POST' });
+        showResult('fireflies', JSON.stringify(data, null, 2));
+        loadClients();
+        loadLogs();
+    } catch (e) {
+        showResult('fireflies', 'Error: ' + e.message);
+    }
+}
+
+// ─── Obsidian ──────────────────────────────────────────────────────────
+
+async function previewObsidian() {
+    const markdown = document.getElementById('obsidian-input').value.trim();
+    if (!markdown) { alert('Paste Obsidian markdown first.'); return; }
+    showResult('obsidian', 'Generating project plans...');
+    try {
+        const data = await agentApi('/api/obsidian/parse-only', {
+            method: 'POST',
+            body: JSON.stringify({ markdown }),
+        });
+        showResult('obsidian', JSON.stringify(data, null, 2));
+    } catch (e) {
+        showResult('obsidian', 'Error: ' + e.message);
+    }
+}
+
+async function processObsidian() {
+    const markdown = document.getElementById('obsidian-input').value.trim();
+    if (!markdown) { alert('Paste Obsidian markdown first.'); return; }
+    showResult('obsidian', 'Processing and creating Notion project pages...');
+    try {
+        const data = await agentApi('/api/obsidian/process', {
+            method: 'POST',
+            body: JSON.stringify({ markdown }),
+        });
+        showResult('obsidian', JSON.stringify(data, null, 2));
+        loadLogs();
+    } catch (e) {
+        showResult('obsidian', 'Error: ' + e.message);
+    }
+}
+
+// ─── Clients ───────────────────────────────────────────────────────────
+
+async function loadClients() {
+    try {
+        const clients = await agentApi('/api/clients');
+        const container = document.getElementById('clients-list');
+        if (!clients.length) {
+            container.innerHTML = '<p style="opacity:0.5">No clients yet. Process a Fireflies report to auto-create one.</p>';
+            return;
+        }
+        container.innerHTML = clients.map(c => `
+            <div class="client-card">
+                <h3>${escapeHtml(c.name)}</h3>
+                <div class="meta">
+                    ${c.notion_page_id ? 'Notion page linked' : 'No Notion page'}
+                    | Created: ${new Date(c.created_at).toLocaleDateString()}
+                </div>
+                ${c.notes ? '<p style="font-size:0.85rem;margin-top:0.5rem">' + escapeHtml(c.notes) + '</p>' : ''}
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Failed to load clients:', e);
+    }
+}
+
+function showAddClientModal() {
+    const name = prompt('Client name:');
+    if (!name) return;
+    agentApi('/api/clients', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+    }).then(() => loadClients()).catch(e => alert('Error: ' + e.message));
+}
+
+// ─── Logs ──────────────────────────────────────────────────────────────
+
+async function loadLogs() {
+    try {
+        const logs = await agentApi('/api/logs?limit=30');
+        const container = document.getElementById('logs-list');
+        if (!logs.length) {
+            container.innerHTML = '<p style="opacity:0.5">No activity yet.</p>';
+            return;
+        }
+        container.innerHTML = logs.map(log => `
+            <div class="log-entry">
+                <span class="log-type">${escapeHtml(log.event_type)}</span>
+                <span class="log-time">${new Date(log.created_at).toLocaleString()}</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Failed to load logs:', e);
+    }
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────
+
+function showResult(panel, text) {
+    const container = document.getElementById(`${panel}-result`);
+    const output = document.getElementById(`${panel}-output`);
+    container.classList.remove('hidden');
+    output.textContent = text;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadStatus();
+    loadClients();
+    loadLogs();
+});
+</script>
+{% endblock %}

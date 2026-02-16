@@ -16,3 +16,10 @@ class Config:
     ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
     MANUSCRIPTS_DIR = os.path.join(BASE_DIR, "manuscripts")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB upload limit
+
+    # ─── Notion AI Agent Configuration ──────────────────────────────────
+    NOTION_TOKEN = os.environ.get("NOTION_TOKEN", "")
+    NOTION_PARENT_PAGE_ID = os.environ.get("NOTION_PARENT_PAGE_ID", "")
+    NOTION_PROJECTS_PAGE_ID = os.environ.get("NOTION_PROJECTS_PAGE_ID", "")
+    NOTION_FIREFLIES_INBOX_DB_ID = os.environ.get("NOTION_FIREFLIES_INBOX_DB_ID", "")
+    NOTION_AGENT_WEBHOOK_SECRET = os.environ.get("NOTION_AGENT_WEBHOOK_SECRET", "")

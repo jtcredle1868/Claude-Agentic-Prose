@@ -27,6 +27,9 @@ def create_app(config_class=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
 
+    from app.agent_routes import agent_bp
+    app.register_blueprint(agent_bp, url_prefix="/agent")
+
     with app.app_context():
         db.create_all()
 

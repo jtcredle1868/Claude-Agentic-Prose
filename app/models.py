@@ -246,3 +246,54 @@ class RevisionHistory(db.Model):
             "content_after": self.content_after[:500] + "..." if len(self.content_after) > 500 else self.content_after,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+# ─── Notion AI Agent Models ─────────────────────────────────────────────
+
+
+class ClientRecord(db.Model):
+    """Tracks known clients and their Notion workspace IDs."""
+    __tablename__ = "client_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(500), nullable=False, unique=True)
+    notion_page_id = db.Column(db.String(200), default="")
+    notion_database_id = db.Column(db.String(200), default="")
+    notes = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow,
+                           onupdate=datetime.datetime.utcnow)
+
+    agent_logs = db.relationship("AgentLog", backref="client", lazy=True,
+                                 order_by="AgentLog.created_at.desc()")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "notion_page_id": self.notion_page_id,
+            "notion_database_id": self.notion_database_id,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class AgentLog(db.Model):
+    """Audit log for all Notion AI Agent actions."""
+    __tablename__ = "agent_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_type = db.Column(db.String(100), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey("client_records.id"), nullable=True)
+    data = db.Column(db.Text, default="")  # JSON payload
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "event_type": self.event_type,
+            "client_id": self.client_id,
+            "data": self.data,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
