@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Prose Engine - Projects{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Your Projects</h1>
+    <div class="header-actions">
+        <button class="btn btn-primary" onclick="showNewProjectModal()">New Project</button>
+        <button class="btn btn-secondary" onclick="showIdeaExpander()">Expand an Idea</button>
+    </div>
+</div>
+
+<div id="projects-grid" class="projects-grid">
+    <div class="loading-placeholder">Loading projects...</div>
+</div>
+
+<!-- New Project Modal Content -->
+<template id="new-project-template">
+    <form id="new-project-form" onsubmit="createProject(event)">
+        <div class="form-group">
+            <label for="proj-title">Title *</label>
+            <input type="text" id="proj-title" required placeholder="Your project title">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="proj-type">Type</label>
+                <select id="proj-type">
+                    <option value="fiction">Fiction</option>
+                    <option value="nonfiction">Nonfiction</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="proj-genre">Genre</label>
+                <input type="text" id="proj-genre" placeholder="e.g., Literary Fiction, Thriller">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="proj-synopsis">Synopsis</label>
+            <textarea id="proj-synopsis" rows="4" placeholder="Brief description of your project"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="proj-author">Author Name</label>
+                <input type="text" id="proj-author" placeholder="Your name">
+            </div>
+            <div class="form-group">
+                <label for="proj-target">Target Word Count</label>
+                <input type="number" id="proj-target" value="80000" min="1000">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Create Project</button>
+    </form>
+</template>
+
+<!-- Idea Expander Modal Content -->
+<template id="idea-expander-template">
+    <form id="idea-form" onsubmit="expandIdea(event)">
+        <div class="form-group">
+            <label for="idea-text">Your Idea or Concept</label>
+            <textarea id="idea-text" rows="6" required
+                placeholder="Describe your idea, concept, or rough draft. It can be as brief as a sentence or as detailed as several paragraphs..."></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="idea-type">Type</label>
+                <select id="idea-type">
+                    <option value="fiction">Fiction</option>
+                    <option value="nonfiction">Nonfiction</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="idea-genre">Genre</label>
+                <input type="text" id="idea-genre" placeholder="Optional genre preference">
+            </div>
+            <div class="form-group">
+                <label for="idea-chapters">Chapters</label>
+                <input type="number" id="idea-chapters" value="12" min="3" max="50">
+            </div>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-secondary" onclick="developConcept()">Develop Concept First</button>
+            <button type="submit" class="btn btn-primary">Generate Full Outline</button>
+        </div>
+    </form>
+    <div id="idea-result" class="result-panel hidden">
+        <h4>Result</h4>
+        <pre id="idea-result-text" class="result-text"></pre>
+        <button class="btn btn-primary" onclick="createProjectFromOutline()">Create Project from This</button>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', loadProjects);
+
+async function loadProjects() {
+    const grid = document.getElementById('projects-grid');
+    try {
+        const projects = await api('/api/projects');
+        if (projects.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <h3>No projects yet</h3>
+                    <p>Create a new project or expand an idea to get started.</p>
+                </div>`;
+            return;
+        }
+        grid.innerHTML = projects.map(p => `
+            <div class="project-card" onclick="window.location='/project/${p.id}'">
+                <div class="card-header">
+                    <span class="badge badge-${p.status}">${p.status}</span>
+                    <span class="badge">${p.project_type}</span>
+                </div>
+                <h3>${escHtml(p.title)}</h3>
+                <p class="card-genre">${escHtml(p.genre || 'No genre set')}</p>
+                <p class="card-synopsis">${escHtml((p.synopsis || '').substring(0, 150))}${(p.synopsis||'').length > 150 ? '...' : ''}</p>
+                <div class="card-stats">
+                    <span>${p.chapter_count} chapters</span>
+                    <span>${(p.word_count || 0).toLocaleString()} words</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${p.progress_percent}%"></div>
+                    </div>
+                    <span>${p.progress_percent}%</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        grid.innerHTML = `<div class="error-state">Failed to load projects: ${err.message}</div>`;
+    }
+}
+
+function showNewProjectModal() {
+    const tpl = document.getElementById('new-project-template');
+    openModal('New Project', tpl.innerHTML);
+}
+
+async function createProject(e) {
+    e.preventDefault();
+    showLoading('Creating project...');
+    try {
+        const project = await api('/api/projects', 'POST', {
+            title: document.getElementById('proj-title').value,
+            project_type: document.getElementById('proj-type').value,
+            genre: document.getElementById('proj-genre').value,
+            synopsis: document.getElementById('proj-synopsis').value,
+            author_name: document.getElementById('proj-author').value,
+            target_word_count: parseInt(document.getElementById('proj-target').value) || 80000,
+        });
+        hideLoading();
+        closeModal();
+        window.location = `/project/${project.id}`;
+    } catch (err) {
+        hideLoading();
+        showToast('Error creating project: ' + err.message, 'error');
+    }
+}
+
+function showIdeaExpander() {
+    const tpl = document.getElementById('idea-expander-template');
+    openModal('Expand an Idea', tpl.innerHTML);
+}
+
+async function expandIdea(e) {
+    e.preventDefault();
+    showLoading('Expanding your idea into a full outline... This may take a minute.');
+    try {
+        const res = await api('/api/ai/expand-idea', 'POST', {
+            idea: document.getElementById('idea-text').value,
+            project_type: document.getElementById('idea-type').value,
+            genre: document.getElementById('idea-genre').value,
+            num_chapters: parseInt(document.getElementById('idea-chapters').value) || 12,
+        });
+        hideLoading();
+        const resultPanel = document.getElementById('idea-result');
+        document.getElementById('idea-result-text').textContent = res.result;
+        resultPanel.classList.remove('hidden');
+        window._lastOutline = res.result;
+    } catch (err) {
+        hideLoading();
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function developConcept() {
+    const concept = document.getElementById('idea-text').value;
+    if (!concept) { showToast('Enter your concept first', 'error'); return; }
+    showLoading('Developing your concept...');
+    try {
+        const res = await api('/api/ai/develop-concept', 'POST', {
+            concept: concept,
+            project_type: document.getElementById('idea-type').value,
+        });
+        hideLoading();
+        const resultPanel = document.getElementById('idea-result');
+        document.getElementById('idea-result-text').textContent = res.result;
+        resultPanel.classList.remove('hidden');
+    } catch (err) {
+        hideLoading();
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function createProjectFromOutline() {
+    showLoading('Creating project...');
+    try {
+        const project = await api('/api/projects', 'POST', {
+            title: 'New Project from Outline',
+            project_type: document.getElementById('idea-type').value,
+            genre: document.getElementById('idea-genre').value,
+            synopsis: window._lastOutline || '',
+            notes: 'Generated from idea expansion',
+        });
+        hideLoading();
+        closeModal();
+        window.location = `/project/${project.id}`;
+    } catch (err) {
+        hideLoading();
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+</script>
+{% endblock %}

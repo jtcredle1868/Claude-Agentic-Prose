@@ -1,0 +1,681 @@
+{% extends "base.html" %}
+{% block title %}{{ project.title }} - Prose Engine{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="/" class="breadcrumb">Projects</a> /
+        <h1 class="inline-title" id="project-title">{{ project.title }}</h1>
+        <span class="badge badge-{{ project.status }}">{{ project.status }}</span>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-sm" onclick="showProjectSettings()">Settings</button>
+        <button class="btn btn-sm" onclick="showResearchPanel()">Research</button>
+        <button class="btn btn-sm" onclick="showCharactersPanel()">Characters</button>
+        <button class="btn btn-sm btn-secondary" onclick="exportManuscript()">Export Manuscript</button>
+        <button class="btn btn-sm btn-primary" onclick="showSubmissionPacket()">Submission Packet</button>
+    </div>
+</div>
+
+<div class="project-stats">
+    <div class="stat">
+        <span class="stat-value" id="word-count">{{ project.word_count }}</span>
+        <span class="stat-label">Words</span>
+    </div>
+    <div class="stat">
+        <span class="stat-value" id="chapter-count">{{ project.chapters|length }}</span>
+        <span class="stat-label">Chapters</span>
+    </div>
+    <div class="stat">
+        <div class="progress-bar large">
+            <div class="progress-fill" style="width: {{ project.progress_percent }}%" id="progress-bar"></div>
+        </div>
+        <span class="stat-label" id="progress-label">{{ project.progress_percent }}% of {{ '{:,}'.format(project.target_word_count) }} target</span>
+    </div>
+</div>
+
+<div class="project-layout">
+    <!-- Chapters Sidebar -->
+    <div class="chapters-sidebar">
+        <div class="sidebar-header">
+            <h3>Chapters</h3>
+            <button class="btn btn-sm btn-primary" onclick="addChapter()">+ Add</button>
+        </div>
+        <div id="chapters-list" class="chapters-list">
+            {% for chapter in project.chapters|sort(attribute='order') %}
+            <div class="chapter-item" data-id="{{ chapter.id }}" onclick="loadChapter({{ chapter.id }})">
+                <span class="chapter-order">{{ chapter.order }}</span>
+                <div class="chapter-info">
+                    <span class="chapter-title">{{ chapter.title }}</span>
+                    <span class="chapter-meta">{{ chapter.word_count }} words &middot; {{ chapter.status }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Main Editor Area -->
+    <div class="editor-area">
+        <div id="editor-placeholder" class="editor-placeholder">
+            <h3>Select a chapter to begin editing</h3>
+            <p>Or create a new chapter to start writing</p>
+        </div>
+        <div id="editor-panel" class="editor-panel hidden">
+            <div class="editor-toolbar">
+                <input type="text" id="editor-chapter-title" class="editor-title-input" placeholder="Chapter Title">
+                <div class="toolbar-actions">
+                    <select id="chapter-status">
+                        <option value="outline">Outline</option>
+                        <option value="draft">Draft</option>
+                        <option value="revision">Revision</option>
+                        <option value="final">Final</option>
+                    </select>
+                    <button class="btn btn-sm" onclick="saveChapter()">Save</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCurrentChapter()">Delete</button>
+                </div>
+            </div>
+            <div class="editor-meta">
+                <input type="text" id="chapter-pov" placeholder="POV Character" class="meta-input">
+                <input type="text" id="chapter-setting" placeholder="Setting" class="meta-input">
+            </div>
+            <div class="editor-tabs">
+                <button class="tab active" onclick="switchTab('content', this)">Content</button>
+                <button class="tab" onclick="switchTab('summary', this)">Summary / Outline</button>
+                <button class="tab" onclick="switchTab('notes', this)">Notes</button>
+            </div>
+            <div id="tab-content" class="tab-panel">
+                <textarea id="chapter-content" class="editor-textarea" placeholder="Write your chapter here..."></textarea>
+            </div>
+            <div id="tab-summary" class="tab-panel hidden">
+                <textarea id="chapter-summary" class="editor-textarea" placeholder="Chapter summary or outline..."></textarea>
+            </div>
+            <div id="tab-notes" class="tab-panel hidden">
+                <textarea id="chapter-notes" class="editor-textarea" placeholder="Working notes for this chapter..."></textarea>
+            </div>
+            <div class="editor-footer">
+                <span id="editor-word-count">0 words</span>
+                <div class="ai-tools">
+                    <span class="ai-label">AI Tools:</span>
+                    <button class="btn btn-xs" onclick="aiExpandChapter()">Expand from Outline</button>
+                    <button class="btn btn-xs" onclick="aiDevEdit()">Dev Edit</button>
+                    <button class="btn btn-xs" onclick="aiLineEdit()">Line Edit</button>
+                    <button class="btn btn-xs" onclick="aiCopyEdit()">Copy Edit</button>
+                    <button class="btn btn-xs" onclick="aiImprove()">Improve</button>
+                    <button class="btn btn-xs" onclick="aiRewrite()">Rewrite</button>
+                    <button class="btn btn-xs" onclick="aiDialogue()">Strengthen Dialogue</button>
+                    <button class="btn btn-xs" onclick="aiTone()">Adjust Tone</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Result Panel -->
+        <div id="ai-result-panel" class="ai-result-panel hidden">
+            <div class="result-header">
+                <h4 id="ai-result-title">AI Result</h4>
+                <div>
+                    <button class="btn btn-xs" onclick="applyAiResult()">Apply to Chapter</button>
+                    <button class="btn btn-xs" onclick="closeAiResult()">Close</button>
+                </div>
+            </div>
+            <pre id="ai-result-content" class="result-text"></pre>
+        </div>
+    </div>
+</div>
+
+<!-- Templates for modals -->
+<template id="project-settings-template">
+    <form id="project-settings-form" onsubmit="saveProjectSettings(event)">
+        <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="set-title" value="{{ project.title }}">
+        </div>
+        <div class="form-group">
+            <label>Subtitle</label>
+            <input type="text" id="set-subtitle" value="{{ project.subtitle or '' }}">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Genre</label>
+                <input type="text" id="set-genre" value="{{ project.genre }}">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="set-status">
+                    <option value="draft" {{ 'selected' if project.status == 'draft' }}>Draft</option>
+                    <option value="revision" {{ 'selected' if project.status == 'revision' }}>Revision</option>
+                    <option value="final" {{ 'selected' if project.status == 'final' }}>Final</option>
+                    <option value="submitted" {{ 'selected' if project.status == 'submitted' }}>Submitted</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Synopsis</label>
+            <textarea id="set-synopsis" rows="4">{{ project.synopsis }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Themes</label>
+            <input type="text" id="set-themes" value="{{ project.themes }}" placeholder="Comma-separated themes">
+        </div>
+        <div class="form-group">
+            <label>Setting Description</label>
+            <textarea id="set-setting" rows="3">{{ project.setting_description }}</textarea>
+        </div>
+        <h4>Author Information</h4>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="set-author-name" value="{{ project.author_name }}">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="set-author-email" value="{{ project.author_email }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Author Bio</label>
+            <textarea id="set-author-bio" rows="3">{{ project.author_bio }}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" id="set-author-phone" value="{{ project.author_phone }}">
+            </div>
+            <div class="form-group">
+                <label>Target Word Count</label>
+                <input type="number" id="set-target" value="{{ project.target_word_count }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Address</label>
+            <textarea id="set-address" rows="2">{{ project.author_address }}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Agent Name</label>
+                <input type="text" id="set-agent" value="{{ project.agent_name }}">
+            </div>
+            <div class="form-group">
+                <label>Agent Email</label>
+                <input type="text" id="set-agent-email" value="{{ project.agent_email }}">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Save Settings</button>
+    </form>
+</template>
+
+<template id="research-panel-template">
+    <div class="research-container">
+        <div class="form-group">
+            <label>Research a Topic</label>
+            <input type="text" id="research-topic" placeholder="Enter topic to research">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Depth</label>
+                <select id="research-depth">
+                    <option value="brief">Brief</option>
+                    <option value="standard" selected>Standard</option>
+                    <option value="deep">Deep</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="align-self:flex-end" onclick="doResearch()">Research</button>
+            <button class="btn btn-secondary" style="align-self:flex-end" onclick="doFactCheck()">Fact-Check Content</button>
+        </div>
+        <div class="form-group">
+            <label>Quick Research Tools</label>
+            <div class="btn-group">
+                <button class="btn btn-xs" onclick="doWorldBuilding()">World Building</button>
+                <button class="btn btn-xs" onclick="doSettingResearch()">Setting Research</button>
+                <button class="btn btn-xs" onclick="doContinuityCheck()">Continuity Check</button>
+            </div>
+        </div>
+        <div id="research-result" class="result-panel hidden">
+            <pre id="research-result-text" class="result-text"></pre>
+            <button class="btn btn-xs" onclick="saveResearchNote()">Save as Research Note</button>
+        </div>
+        <h4>Saved Research Notes</h4>
+        <div id="research-notes-list"></div>
+    </div>
+</template>
+
+<template id="characters-panel-template">
+    <div class="characters-container">
+        <button class="btn btn-primary btn-sm" onclick="addCharacter()">Add Character</button>
+        <div id="characters-list" class="characters-list"></div>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PROJECT_ID = {{ project.id }};
+let currentChapterId = null;
+let currentTab = 'content';
+
+// ─── Chapter Management ─────────────────────────────────────────
+function loadChapter(chapterId) {
+    currentChapterId = chapterId;
+    document.querySelectorAll('.chapter-item').forEach(el => el.classList.remove('active'));
+    const item = document.querySelector(`.chapter-item[data-id="${chapterId}"]`);
+    if (item) item.classList.add('active');
+
+    api(`/api/chapters/${chapterId}`).then(ch => {
+        document.getElementById('editor-placeholder').classList.add('hidden');
+        document.getElementById('editor-panel').classList.remove('hidden');
+        document.getElementById('editor-chapter-title').value = ch.title;
+        document.getElementById('chapter-status').value = ch.status;
+        document.getElementById('chapter-pov').value = ch.pov_character || '';
+        document.getElementById('chapter-setting').value = ch.setting || '';
+        document.getElementById('chapter-content').value = ch.content || '';
+        document.getElementById('chapter-summary').value = ch.summary || '';
+        document.getElementById('chapter-notes').value = ch.notes || '';
+        updateWordCount();
+    });
+}
+
+async function saveChapter() {
+    if (!currentChapterId) return;
+    showLoading('Saving...');
+    try {
+        await api(`/api/chapters/${currentChapterId}`, 'PUT', {
+            title: document.getElementById('editor-chapter-title').value,
+            status: document.getElementById('chapter-status').value,
+            pov_character: document.getElementById('chapter-pov').value,
+            setting: document.getElementById('chapter-setting').value,
+            content: document.getElementById('chapter-content').value,
+            summary: document.getElementById('chapter-summary').value,
+            notes: document.getElementById('chapter-notes').value,
+        });
+        hideLoading();
+        showToast('Chapter saved');
+        refreshChapterList();
+    } catch (err) {
+        hideLoading();
+        showToast('Error saving: ' + err.message, 'error');
+    }
+}
+
+async function addChapter() {
+    const title = prompt('Chapter title:');
+    if (!title) return;
+    try {
+        const ch = await api(`/api/projects/${PROJECT_ID}/chapters`, 'POST', { title });
+        refreshChapterList();
+        loadChapter(ch.id);
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function deleteCurrentChapter() {
+    if (!currentChapterId || !confirm('Delete this chapter? This cannot be undone.')) return;
+    await api(`/api/chapters/${currentChapterId}`, 'DELETE');
+    currentChapterId = null;
+    document.getElementById('editor-panel').classList.add('hidden');
+    document.getElementById('editor-placeholder').classList.remove('hidden');
+    refreshChapterList();
+}
+
+async function refreshChapterList() {
+    const chapters = await api(`/api/projects/${PROJECT_ID}/chapters`);
+    const list = document.getElementById('chapters-list');
+    list.innerHTML = chapters.map(ch => `
+        <div class="chapter-item ${ch.id === currentChapterId ? 'active' : ''}" data-id="${ch.id}" onclick="loadChapter(${ch.id})">
+            <span class="chapter-order">${ch.order}</span>
+            <div class="chapter-info">
+                <span class="chapter-title">${escHtml(ch.title)}</span>
+                <span class="chapter-meta">${ch.word_count} words &middot; ${ch.status}</span>
+            </div>
+        </div>
+    `).join('');
+    // Update project stats
+    const proj = await api(`/api/projects/${PROJECT_ID}`);
+    document.getElementById('word-count').textContent = (proj.word_count || 0).toLocaleString();
+    document.getElementById('chapter-count').textContent = proj.chapter_count;
+    document.getElementById('progress-bar').style.width = proj.progress_percent + '%';
+    document.getElementById('progress-label').textContent = `${proj.progress_percent}% of ${proj.target_word_count.toLocaleString()} target`;
+}
+
+function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+}
+
+function updateWordCount() {
+    const content = document.getElementById('chapter-content').value;
+    const count = content.trim() ? content.trim().split(/\s+/).length : 0;
+    document.getElementById('editor-word-count').textContent = count.toLocaleString() + ' words';
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const ta = document.getElementById('chapter-content');
+    if (ta) ta.addEventListener('input', updateWordCount);
+});
+
+// ─── AI Tools ───────────────────────────────────────────────────
+function showAiResult(title, text) {
+    document.getElementById('ai-result-title').textContent = title;
+    document.getElementById('ai-result-content').textContent = text;
+    document.getElementById('ai-result-panel').classList.remove('hidden');
+    window._lastAiResult = text;
+}
+
+function applyAiResult() {
+    if (window._lastAiResult) {
+        document.getElementById('chapter-content').value = window._lastAiResult;
+        updateWordCount();
+        closeAiResult();
+        showToast('Applied to chapter content');
+    }
+}
+
+function closeAiResult() {
+    document.getElementById('ai-result-panel').classList.add('hidden');
+}
+
+async function aiExpandChapter() {
+    if (!currentChapterId) return;
+    const summary = document.getElementById('chapter-summary').value;
+    if (!summary) { showToast('Add a chapter summary/outline first', 'error'); return; }
+    showLoading('Expanding chapter from outline...');
+    try {
+        const res = await api('/api/ai/expand-chapter', 'POST', {
+            chapter_id: currentChapterId,
+            target_words: 4000,
+        });
+        hideLoading();
+        showAiResult('Expanded Chapter', res.result);
+        document.getElementById('chapter-content').value = res.result;
+        updateWordCount();
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function aiDevEdit() {
+    const content = document.getElementById('chapter-content').value;
+    if (!content) { showToast('No content to edit', 'error'); return; }
+    showLoading('Generating developmental edit...');
+    try {
+        const res = await api('/api/ai/developmental-edit', 'POST', { content });
+        hideLoading();
+        showAiResult('Developmental Edit', res.result);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function aiLineEdit() {
+    const content = document.getElementById('chapter-content').value;
+    if (!content) { showToast('No content to edit', 'error'); return; }
+    showLoading('Performing line edit...');
+    try {
+        const res = await api('/api/ai/line-edit', 'POST', { content });
+        hideLoading();
+        showAiResult('Line Edit', res.result);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function aiCopyEdit() {
+    const content = document.getElementById('chapter-content').value;
+    if (!content) { showToast('No content to edit', 'error'); return; }
+    showLoading('Performing copy edit...');
+    try {
+        const res = await api('/api/ai/copy-edit', 'POST', { content });
+        hideLoading();
+        showAiResult('Copy Edit', res.result);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function aiImprove() {
+    const content = document.getElementById('chapter-content').value;
+    if (!content) { showToast('No content to improve', 'error'); return; }
+    showLoading('Improving prose...');
+    try {
+        const res = await api('/api/ai/improve', 'POST', { content });
+        hideLoading();
+        showAiResult('Improved Prose', res.result);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function aiRewrite() {
+    const content = document.getElementById('chapter-content').value;
+    if (!content) { showToast('No content to rewrite', 'error'); return; }
+    const instructions = prompt('Rewrite instructions (e.g., "Make it more suspenseful", "Shift to first person"):');
+    if (!instructions) return;
+    showLoading('Rewriting...');
+    try {
+        const res = await api('/api/ai/rewrite', 'POST', { content, instructions });
+        hideLoading();
+        showAiResult('Rewritten Passage', res.result);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function aiDialogue() {
+    const content = document.getElementById('chapter-content').value;
+    if (!content) { showToast('No content', 'error'); return; }
+    showLoading('Strengthening dialogue...');
+    try {
+        const res = await api('/api/ai/strengthen-dialogue', 'POST', { content });
+        hideLoading();
+        showAiResult('Strengthened Dialogue', res.result);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function aiTone() {
+    const content = document.getElementById('chapter-content').value;
+    if (!content) { showToast('No content', 'error'); return; }
+    const tone = prompt('Target tone (e.g., "darker and more foreboding", "lighter and humorous"):');
+    if (!tone) return;
+    showLoading('Adjusting tone...');
+    try {
+        const res = await api('/api/ai/adjust-tone', 'POST', { content, target_tone: tone });
+        hideLoading();
+        showAiResult('Tone Adjusted', res.result);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+// ─── Project Settings ───────────────────────────────────────────
+function showProjectSettings() {
+    const tpl = document.getElementById('project-settings-template');
+    openModal('Project Settings', tpl.innerHTML);
+}
+
+async function saveProjectSettings(e) {
+    e.preventDefault();
+    showLoading('Saving...');
+    try {
+        await api(`/api/projects/${PROJECT_ID}`, 'PUT', {
+            title: document.getElementById('set-title').value,
+            subtitle: document.getElementById('set-subtitle').value,
+            genre: document.getElementById('set-genre').value,
+            status: document.getElementById('set-status').value,
+            synopsis: document.getElementById('set-synopsis').value,
+            themes: document.getElementById('set-themes').value,
+            setting_description: document.getElementById('set-setting').value,
+            author_name: document.getElementById('set-author-name').value,
+            author_email: document.getElementById('set-author-email').value,
+            author_bio: document.getElementById('set-author-bio').value,
+            author_phone: document.getElementById('set-author-phone').value,
+            author_address: document.getElementById('set-address').value,
+            agent_name: document.getElementById('set-agent').value,
+            agent_email: document.getElementById('set-agent-email').value,
+            target_word_count: parseInt(document.getElementById('set-target').value) || 80000,
+        });
+        hideLoading();
+        closeModal();
+        showToast('Settings saved');
+        location.reload();
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+// ─── Research ───────────────────────────────────────────────────
+function showResearchPanel() {
+    const tpl = document.getElementById('research-panel-template');
+    openModal('Research', tpl.innerHTML);
+    loadResearchNotes();
+}
+
+async function loadResearchNotes() {
+    const notes = await api(`/api/projects/${PROJECT_ID}/research`);
+    const list = document.getElementById('research-notes-list');
+    if (!notes.length) { list.innerHTML = '<p class="muted">No research notes yet.</p>'; return; }
+    list.innerHTML = notes.map(n => `
+        <div class="research-note">
+            <strong>${escHtml(n.title)}</strong> <span class="badge">${n.category}</span>
+            <p>${escHtml((n.content || '').substring(0, 200))}...</p>
+        </div>
+    `).join('');
+}
+
+async function doResearch() {
+    const topic = document.getElementById('research-topic').value;
+    if (!topic) { showToast('Enter a topic', 'error'); return; }
+    showLoading('Researching...');
+    try {
+        const res = await api('/api/ai/research', 'POST', {
+            topic,
+            depth: document.getElementById('research-depth').value,
+            project_context: `Project: {{ project.title }}, Genre: {{ project.genre }}`,
+        });
+        hideLoading();
+        document.getElementById('research-result-text').textContent = res.result;
+        document.getElementById('research-result').classList.remove('hidden');
+        window._lastResearch = { topic, result: res.result };
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function doFactCheck() {
+    const content = document.getElementById('chapter-content')?.value;
+    if (!content) { showToast('No chapter content to fact-check', 'error'); return; }
+    showLoading('Fact-checking...');
+    try {
+        const res = await api('/api/ai/fact-check', 'POST', { content, project_type: '{{ project.project_type }}' });
+        hideLoading();
+        document.getElementById('research-result-text').textContent = res.result;
+        document.getElementById('research-result').classList.remove('hidden');
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function doWorldBuilding() {
+    const details = prompt('Describe the world or setting to develop:');
+    if (!details) return;
+    showLoading('Researching world-building...');
+    try {
+        const res = await api('/api/ai/world-building', 'POST', { world_details: details });
+        hideLoading();
+        document.getElementById('research-result-text').textContent = res.result;
+        document.getElementById('research-result').classList.remove('hidden');
+        window._lastResearch = { topic: 'World Building', result: res.result };
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function doSettingResearch() {
+    const setting = prompt('Describe the setting to research:');
+    if (!setting) return;
+    const period = prompt('Time period (or leave blank for contemporary):') || '';
+    showLoading('Researching setting...');
+    try {
+        const res = await api('/api/ai/setting-research', 'POST', { setting, time_period: period });
+        hideLoading();
+        document.getElementById('research-result-text').textContent = res.result;
+        document.getElementById('research-result').classList.remove('hidden');
+        window._lastResearch = { topic: `Setting: ${setting}`, result: res.result };
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function doContinuityCheck() {
+    showLoading('Checking continuity across all chapters...');
+    try {
+        const res = await api('/api/ai/continuity-check', 'POST', { project_id: PROJECT_ID });
+        hideLoading();
+        document.getElementById('research-result-text').textContent = res.result;
+        document.getElementById('research-result').classList.remove('hidden');
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function saveResearchNote() {
+    if (!window._lastResearch) return;
+    await api(`/api/projects/${PROJECT_ID}/research`, 'POST', {
+        title: window._lastResearch.topic,
+        content: window._lastResearch.result,
+        category: 'ai-research',
+    });
+    showToast('Research note saved');
+    loadResearchNotes();
+}
+
+// ─── Characters ─────────────────────────────────────────────────
+function showCharactersPanel() {
+    const tpl = document.getElementById('characters-panel-template');
+    openModal('Characters', tpl.innerHTML);
+    loadCharacters();
+}
+
+async function loadCharacters() {
+    const chars = await api(`/api/projects/${PROJECT_ID}/characters`);
+    const list = document.getElementById('characters-list');
+    if (!chars.length) { list.innerHTML = '<p class="muted">No characters yet.</p>'; return; }
+    list.innerHTML = chars.map(c => `
+        <div class="character-card">
+            <h4>${escHtml(c.name)} <span class="badge">${c.role}</span></h4>
+            <p>${escHtml(c.description || 'No description')}</p>
+            <button class="btn btn-xs" onclick="editCharacter(${c.id})">Edit</button>
+            <button class="btn btn-xs btn-danger" onclick="deleteCharacter(${c.id})">Delete</button>
+        </div>
+    `).join('');
+}
+
+async function addCharacter() {
+    const name = prompt('Character name:');
+    if (!name) return;
+    const role = prompt('Role (protagonist/antagonist/supporting/minor):') || 'supporting';
+    await api(`/api/projects/${PROJECT_ID}/characters`, 'POST', { name, role });
+    loadCharacters();
+}
+
+async function deleteCharacter(id) {
+    if (!confirm('Delete this character?')) return;
+    await api(`/api/characters/${id}`, 'DELETE');
+    loadCharacters();
+}
+
+// ─── Export ─────────────────────────────────────────────────────
+async function exportManuscript() {
+    showLoading('Generating manuscript DOCX...');
+    try {
+        const response = await fetch(`/api/projects/${PROJECT_ID}/export/manuscript`, { method: 'POST' });
+        if (!response.ok) throw new Error('Export failed');
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'manuscript.docx';
+        a.click();
+        URL.revokeObjectURL(url);
+        hideLoading();
+        showToast('Manuscript downloaded');
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+async function showSubmissionPacket() {
+    showLoading('Generating full submission packet (this may take a few minutes)...');
+    try {
+        const res = await api(`/api/projects/${PROJECT_ID}/export/submission-packet`, 'POST');
+        hideLoading();
+        let html = '<h4>Submission Packet Generated</h4><ul>';
+        res.files.forEach(f => {
+            html += `<li><strong>${escHtml(f.name)}</strong></li>`;
+        });
+        html += '</ul><p>Files saved to the manuscripts directory on the server.</p>';
+        openModal('Submission Packet', html);
+    } catch (err) { hideLoading(); showToast('Error: ' + err.message, 'error'); }
+}
+
+// Keyboard shortcut: Ctrl+S to save
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveChapter();
+    }
+});
+</script>
+{% endblock %}
